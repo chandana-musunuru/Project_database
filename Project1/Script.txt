@@ -1,0 +1,70 @@
+/*--query1--*/
+select hobby,count('email') as total from hobby group by hobby.hobby ; 
+
+/*--query2--*/
+SELECT u.name, u.address
+FROM user u
+JOIN celebrity c ON u.email = c.email
+WHERE c.kind !='movieStar';
+
+/*--query3--*/
+SELECT v.id, v.name, COUNT(a.content) AS num_ads
+FROM vendor v
+JOIN advertisement a ON v.id = a.vendorid
+GROUP BY v.id, v.name
+ORDER BY num_ads DESC;
+
+
+/*--query4--*/
+SELECT distinct u.email, u.password, u.name, u.date_of_birth, c.kind
+FROM user u
+JOIN celebrity c ON u.email = c.email
+JOIN follow f ON u.email = f.follower
+WHERE c.kind = 'movieStar';
+
+/*--query5--*/
+SELECT u.name, u.email, COUNT(f.followee) AS num_followers
+FROM user u
+JOIN celebrity c ON u.email = c.email
+JOIN follow f ON c.email = f.followee
+GROUP BY u.name, u.email
+HAVING num_followers > 55
+ORDER BY num_followers DESC;
+
+
+/*--query6--*/
+SELECT ua.name AS follower_name, ub.name AS followee_name
+FROM user ua
+JOIN follow f ON ua.email = f.follower
+JOIN user ub ON f.followee = ub.email
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM blurt_analysis ba1
+    JOIN blurt_analysis ba2 ON ba1.topicid = ba2.topicid
+    WHERE ba1.email = ua.email AND ba2.email = ub.email
+);
+
+
+/*--query7--*/
+SELECT location, COUNT(blurtid) AS total_blurts
+FROM blurt
+GROUP BY location
+HAVING total_blurts > 40
+ORDER BY total_blurts DESC;
+
+/*--query8--*/
+SELECT v.name AS vendor_name, va.email AS ambassador_email, COUNT(f.follower) AS num_following
+FROM vendor v
+JOIN vendor_ambassador va ON v.id = va.vendorid
+JOIN follow f ON va.email = f.follower
+GROUP BY v.name, va.email
+ORDER BY num_following DESC;
+
+
+/*--query9--*/
+SELECT v.id AS vendor_id, v.name AS vendor_name, va.email AS ambassador_email, COUNT(ua.email) AS total_users_shown_ads
+FROM vendor v
+JOIN vendor_ambassador va ON v.id = va.vendorid
+JOIN advertisement a ON v.id = a.vendorid
+JOIN user_ad ua ON a.id = ua.adid
+GROUP BY v.id, v.name, va.email;

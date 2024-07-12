@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Application</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .add-btn {
+            background-color: green;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        .edit-btn {
+            background-color: orange;
+            color: black;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .delete-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .save-btn {
+            background-color: blue;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+        }
+        table, th, td {
+            border: none; /* Remove border lines between columns */
+        }
+        thead th {
+            background-color: lightblue;
+        }
+        tbody tr:nth-child(even) {
+            background-color: lightblue;
+        }
+        tbody tr:nth-child(odd) {
+            background-color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="tables-container"></div>
+
+    <script>
+        const apiUrl = 'http://localhost:3001/api';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTables();
+        });
+        
+        async function fetchTables() {
+            try {
+                const response = await fetch(`${apiUrl}/tables`);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                const tables = await response.json();
+                const container = document.getElementById('tables-container');
+                container.innerHTML = '';
+                tables.forEach(table => {
+                    const tableDiv = document.createElement('div');
+                    tableDiv.innerHTML = `
+                        <div class="header-row">
+                            <h2>${table}</h2>
+                            <button class="add-btn" onclick="addEmptyRow('${table}')">Add Data</button>
+                        </div>
+                        <table id="${table}-table">
+                            <thead>
+                                <tr></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    `;
+                    container.appendChild(tableDiv);
+                    fetchTableData(table);
+                });
+            } catch (error) {
+                alert(`Failed to fetch tables: ${error.message}`);
+            }
+        }
+        
+        async function fetchTableData(table) {
+            try {
+                const response = await fetch(`${apiUrl}/${table}`);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                const data = await response.json();
+                const tableEl = document.getElementById(`${table}-table`);
+                const thead = tableEl.querySelector('thead tr');
+                const tbody = tableEl.querySelector('tbody');
+                tbody.innerHTML = '';
+        
+                if (data.length > 0) {
+                    // Set table headers
+                    thead.innerHTML = '';
+                    Object.keys(data[0]).forEach(key => {
+                        const th = document.createElement('th');
+                        th.textContent = key;
+                        thead.appendChild(th);
+                    });
+                    const actionTh = document.createElement('th');
+                    actionTh.textContent = 'Actions';
+                    thead.appendChild(actionTh);
+        
+                    // Set table rows
+                    data.forEach((row, index) => {
+                        const tr = document.createElement('tr');
+                        Object.values(row).forEach(value => {
+                            const td = document.createElement('td');
+                            td.textContent = value;
+                            tr.appendChild(td);
+                        });
+                        const actionsTd = document.createElement('td');
+                        const idField = getIdField(table);
+                        const id = table === 'titleauthors' ? `${row.titleID},${row.auID}` : row[idField];
+                        actionsTd.innerHTML = `
+                            <button class="edit-btn" onclick="editRecord('${table}', '${id}')">Edit</button>
+                            <button class="delete-btn" onclick="deleteRecord('${table}', '${id}')">Delete</button>
+                        `;
+                        tr.appendChild(actionsTd);
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                alert(`Failed to fetch table data for ${table}: ${error.message}`);
+            }
+        }
+        
+        function addEmptyRow(table) {
+           
+            const tbody = document.getElementById(`${table}-table`).querySelector('tbody');
+            const tr = document.createElement('tr');
+            const columns = document.getElementById(`${table}-table`).querySelectorAll('thead th');
+            columns.forEach((col, index) => {
+                if (index < columns.length - 1) {  // Skip 'Actions' column
+                    const td = document.createElement('td');
+                    td.contentEditable = true;
+                    tr.appendChild(td);
+                }
+            });
+            const actionsTd = document.createElement('td');
+            actionsTd.innerHTML = `<button class="save-btn" onclick="saveRecord('${table}', this)">Save</button>`;
+            tr.appendChild(actionsTd);
+            tbody.appendChild(tr);
+        }
+        
+        async function saveRecord(table, button) {
+            const row = button.parentElement.parentElement;
+            const cells = row.querySelectorAll('td');
+            const data = {};
+            cells.forEach((cell, index) => {
+                if (index < cells.length - 1) {  // Skip 'Actions' column
+                    data[document.getElementById(`${table}-table`).querySelectorAll('thead th')[index].textContent] = cell.innerText.trim();
+                }
+            });
+            try {
+                const response = await fetch(`${apiUrl}/${table}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                fetchTableData(table);
+            } catch (error) {
+                alert(`Failed to save record: ${error.message}`);
+            }
+        }
+            
+               //edit record
+        
+        async function editRecord(table, id) {
+            console.log(`Editing record ${id} in ${table}`); // Debugging
+            const row = document.querySelector(`#${table}-table button[onclick="editRecord('${table}', '${id}')"]`).parentElement.parentElement;
+            const cells = row.querySelectorAll('td');
+            cells.forEach((cell, index) => {
+                if (index < cells.length - 1) {  // Skip 'Actions' column
+                    cell.contentEditable = true;
+                }
+            });
+        
+            const existingSaveButton = row.querySelector('.save-btn');
+            if (existingSaveButton) {
+                existingSaveButton.remove();
+            }
+        
+            const saveBtn = document.createElement('button');
+            saveBtn.innerText = 'Save';
+            saveBtn.className = 'save-btn';
+            saveBtn.onclick = async () => {
+                const data = {};
+                cells.forEach((cell, index) => {
+                    if (index < cells.length - 1) {  // Skip 'Actions' column
+                        const key = document.getElementById(`${table}-table`).querySelectorAll('thead th')[index].textContent;
+                        data[key] = cell.innerText.trim(); // Trim whitespace from cell content
+        
+                        // Parse titleID and auID as integers if they are present
+                        if (key === 'titleID' || key === 'auID') {
+                            data[key] = parseInt(cell.innerText.trim(), 10);
+                        }
+                    }
+                });
+        
+                let apiUrlUpdate;
+                if (table === 'subjects') {
+                    apiUrlUpdate = `${apiUrl}/subjects/${id}`;
+                } else if (table === 'titles') {
+                    apiUrlUpdate = `${apiUrl}/titles/${id}`;
+                } else if (table === 'titleauthors') {
+                    const [titleID, auID] = id.split(','); // Split the id to get titleID and auID
+                    apiUrlUpdate = `${apiUrl}/${table}/${titleID},${auID}`;
+                } else {
+                    apiUrlUpdate = `${apiUrl}/${table}/${id}`;
+                }
+        
+                try {
+                    console.log(`Updating record at ${apiUrlUpdate} with data:`, data);
+                    const response = await fetch(apiUrlUpdate, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+        
+                    if (!response.ok) {
+                        const errorText = await response.text(); // Retrieve the error message
+                        throw new Error(`Error: ${response.statusText}. ${errorText}`);
+                    } else {
+                        fetchTableData(table);
+                    }
+                } catch (error) {
+                    alert(`Failed to update record: ${error.message}`);
+                }
+            };
+        
+            row.querySelector('td:last-child').appendChild(saveBtn);
+        }
+        
+        
+        
+        async function deleteRecord(table, id) {
+            console.log(`Deleting record ${id} from ${table}`); // Debugging
+            try {
+                let apiUrlDelete;
+                if (table === 'titles') {
+                    alert("Cannot delete a child row: a foreign key constraint fails");
+                    return;
+                }
+                if (table === 'titleauthors') {
+                    const [titleID, auID] = id.split(',');
+                    apiUrlDelete = `${apiUrl}/${table}/${titleID},${auID}`;
+                } else {
+                    apiUrlDelete = `${apiUrl}/${table}/${id}`;
+                }
+        
+                const response = await fetch(apiUrlDelete, { method: 'DELETE' });
+                if (!response.ok) {
+                    console.error('response.statusText')
+                    const errorText = await response.text();
+                    throw new Error(`Error: ${response.statusText}`);
+                } else {
+                    fetchTableData(table);
+                }
+            } catch (error) {
+                const constraintError = error.message.includes('ER_ROW_IS_REFERENCED_2');
+                if (constraintError) {
+                    alert('Deletion not possible due to constraints');
+                } else {
+                    alert('Deletion not possible due to constraints');
+                    //alert(`Failed to delete record: ${error.message}`);
+                }
+             }
+        
+     }
+     
+
+       
+
+        function getIdField(table) {
+            const idFields = {
+                authors: 'auID',
+                publishers: 'pubID',
+                titles: 'titleID',
+                titleauthors: 'titleID,auID',
+                subjects: 'subID',
+                customer: 'custID'
+            };
+            return idFields[table];
+        }
+    </script>
+</body>
+
+</html>

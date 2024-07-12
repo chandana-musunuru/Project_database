@@ -1,0 +1,10 @@
+email,password,name,date_of_birth,kind
+Brad_Pitt@pitt.com,BradPitt,BradPitt,1974-08-15,MovieStar
+Bruce_Willis@bws.com,BruceWillis,BruceWillis,1963-06-26,MovieStar
+John_Travolta@jtv.com,JohnTravolta,JohnTravolta,1982-04-25,MovieStar
+Julia_Roberts_@rbt.com,JuliaRoberts,JuliaRoberts,1967-09-04,MovieStar
+Justin_Timberlake@tlk.com,JustinTimberlake,JustinTimberlake,1972-08-10,MovieStar
+Nicholas_Cage@ncg.com,NicholasCage,NicholasCage,1965-04-01,MovieStar
+Nicole_Kidman@kid.com,NicoleKidman,NicoleKidman,1969-12-02,MovieStar
+Sandra_Bullock@blk.com,SandraBullock,SandraBullock,1986-08-12,MovieStar
+Tom_Hanks@thk.com,TomHanks,TomHanks,1987-02-20,MovieStar
